@@ -18,10 +18,19 @@ import org.example.s3graph.util.ParseInto
 import java.util.NoSuchElementException
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
+/**
+ * A type class used to construct a Flow operator that:
+ * - filters incoming events applying the `filter` predicate;
+ * - fetches S3 object(s) referenced in the incoming S3E event (using the passed parallelism);
+ * - generates a Source for each S3 object;
+ * - runs each Source with the Sink generated applying the `s3BytestringSinkProvider` function.
+ *
+ * @tparam In
+ */
 trait S3EventToTransformerFlow[In] extends LazyLogging {
 
   def apply[S3E <: S3BaseEvent](s3BytestringSinkProvider: S3E => Sink[In, Future[Unit]],
-                                filterPred: S3E => Boolean,
+                                filter: S3E => Boolean,
                                 parallelism: Int)(
                   implicit actorSystem: ActorSystem, mat: ActorMaterializer, ec: ExecutionContextExecutor, decoder: Decoder[S3E]
                 ): Flow[CommittableMessage[String, String], (CommittableOffset, Option[Unit]), NotUsed]
@@ -35,8 +44,8 @@ object S3EventToTransformerFlow {
   implicit object BytestringS3EventToTransformerFlow extends S3EventToTransformerFlow[ByteString] {
 
     override def apply[S3E <: S3BaseEvent](s3BytestringSinkProvider: S3E => Sink[ByteString, Future[Unit]],
-                            filterPred: S3E => Boolean,
-                            parallelism: Int)(
+                                           filter: S3E => Boolean,
+                                           parallelism: Int)(
                              implicit actorSystem: ActorSystem, mat: ActorMaterializer, ec: ExecutionContextExecutor, decoder: Decoder[S3E]
                            ): Flow[CommittableMessage[String, String], (CommittableOffset, Option[Unit]), NotUsed] = {
 
@@ -44,7 +53,7 @@ object S3EventToTransformerFlow {
       def fetchS3ObjectAndApplySink(s3Event: S3E): Future[Option[Unit]] = {
         val (bucket, key) = (s3Event.bucketName, s3Event.s3Key)
 
-        if (filterPred(s3Event)) {
+        if (filter(s3Event)) {
           logger.info(s"Fetching file from bucket: $bucket, key: $key")
 
           S3.download(bucket, key).runWith(Sink.head.mapMaterializedValue(_.recover {
@@ -77,7 +86,7 @@ object S3EventToTransformerFlow {
   implicit object BytestringSourcesS3EventToTransformerFlow extends S3EventToTransformerFlow[S3OptionalSource] {
 
     override def apply[S3E <: S3BaseEvent](s3SourceBytestringSinkProvider: S3E => Sink[S3OptionalSource, Future[Unit]],
-                                           filterPred: S3E => Boolean,
+                                           filter: S3E => Boolean,
                                            parallelism: Int)(
                              implicit actorSystem: ActorSystem, mat: ActorMaterializer, ec: ExecutionContextExecutor, decoder: Decoder[S3E]
                            ): Flow[CommittableMessage[String, String], (CommittableOffset, Option[Unit]), NotUsed] = {
@@ -86,15 +95,16 @@ object S3EventToTransformerFlow {
       def fetchS3ObjectAndApplySink(s3Event: S3E): Future[Option[Unit]] = {
         val (bucket, key) = (s3Event.bucketName, s3Event.s3Key)
 
-        if (filterPred(s3Event)) {
+        if (filter(s3Event)) {
           logger.info(s"Fetching file from bucket: $bucket, key: $key")
 
           S3.listBucket(bucket, Some(key))
             .map(_.key)
             .map(S3.download(bucket, _))
+            //TODO permit parallelism via config?
             .mapAsync(1)(_.runWith(Sink.head.mapMaterializedValue(_.recover {
                 case ex: NoSuchElementException =>
-                  val errorMsg = s"S3 download returned no elements downloading from bucket: [$bucket], key: [$key]"
+                  val errorMsg = s"S3 download returned no elements from bucket: [$bucket], key: [$key]"
                   logger.error(errorMsg, ex)
                   None
               }))

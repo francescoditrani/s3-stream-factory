@@ -1,0 +1,8 @@
+target
+.idea/
+.terraform
+*.tgz
+.lock
+charts
+template.yaml
+.DS_Store

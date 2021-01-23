@@ -1,0 +1,25 @@
+{
+    "element": [
+        {
+            "sequence_token": "de1c285c-da84-46db-864c-6d3b64a8b761",
+            "element_token": "86fde8df-c55d-4868-bd25-97f0ed62c9c9",
+            "data_token": "ba3e06bb-282d-40c8-bb92-d5c0a1adcbee",
+            "timestamp": 1558442891572370,
+            "autonomy_token": "0bf54c02-fafb-427c-8ee5-c24f1bde384d",
+            "autonomous_engaged": false,
+            "annotation_token": "0b9ecdaa-f1cf-427e-8e30-233bf2005301",
+            "sync": true
+        },
+        {
+            "sequence_token": "de1c285c-da84-46db-864c-6d3b64a8b761",
+            "element_token": "0bf54c02-fafb-427c-8ee5-c24f1bde384d",
+            "data_token": "0b9ecdaa-f1cf-427e-8e30-233bf2005301",
+            "timestamp": 1558442891607343,
+            "autonomy_token": "86fde8df-c55d-4868-bd25-97f0ed62c9c9",
+            "autonomous_engaged": false,
+            "annotation_token": "de1c285c-da84-46db-864c-6d3b64a8b761",
+            "sync": false
+
+        }
+    ]
+}

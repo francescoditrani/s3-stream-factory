@@ -24,18 +24,20 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContextExecutor, _}
 import scala.util.Try
 
-class S3StreamGraphFactoryTest extends TestKit(ActorSystem("test-system"))
-  with ImplicitSender
-  with WordSpecLike
-  with ScalaFutures
-  with MockitoSugar
-  with EmbeddedKafka
-  with Matchers
-  with BeforeAndAfterEach
-  with BeforeAndAfterAll
-  with LazyLogging {
+class S3StreamGraphFactoryTest
+    extends TestKit(ActorSystem("test-system"))
+    with ImplicitSender
+    with WordSpecLike
+    with ScalaFutures
+    with MockitoSugar
+    with EmbeddedKafka
+    with Matchers
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with LazyLogging {
 
-  implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = Span(60, Seconds), interval = Span(500, Millis))
+  implicit val defaultPatience: PatienceConfig =
+    PatienceConfig(timeout = Span(60, Seconds), interval = Span(500, Millis))
 
   implicit val ec: ExecutionContextExecutor = system.dispatcher
 
@@ -81,27 +83,33 @@ class S3StreamGraphFactoryTest extends TestKit(ActorSystem("test-system"))
         "object3" -> MyS3Event(bucket, s3Key = "key3")
       )
 
-      s3ObjectsToEvents.foreach{ case (objectContent, s3EventValue) =>
-        Await.result(
-          S3Client.multipartUpload(
-            new ByteArrayInputStream(objectContent.getBytes),
-            s3EventValue.bucketName,
-            s3EventValue.s3Key
-        ), 5.seconds)
+      s3ObjectsToEvents.foreach {
+        case (objectContent, s3EventValue) =>
+          Await.result(
+            S3Client.multipartUpload(
+              new ByteArrayInputStream(objectContent.getBytes),
+              s3EventValue.bucketName,
+              s3EventValue.s3Key
+            ),
+            5.seconds
+          )
       }
 
-      val s3BytestringSinkProvider: MyS3Event => Sink[ByteString, Future[Done]] = (s3Event: MyS3Event) => {
-        Flow[ByteString]
-          .map(_.decodeString("UTF-8"))
-          .to(Sink.foreach{ content => testActor ! (content -> s3Event)})
-          .mapMaterializedValue(_ => Future(Done))
-      }
+      val s3BytestringSinkProvider: MyS3Event => Sink[ByteString, Future[Done]] =
+        (s3Event: MyS3Event) => {
+          Flow[ByteString]
+            .map(_.decodeString("UTF-8"))
+            .to(Sink.foreach { content => testActor ! (content -> s3Event) })
+            .mapMaterializedValue(_ => Future(Done))
+        }
 
       val s3StreamGraph: ActorRef = system.actorOf(
-        Props(S3StreamGraphFactory[MyS3Event](
-          s3BytestringSinkProvider,
-          S3EventToExecutedGraphFlow[MyS3Event]()
-        ))
+        Props(
+          S3StreamGraphFactory[MyS3Event](
+            s3BytestringSinkProvider,
+            S3EventToExecutedGraphFlow[MyS3Event]()
+          )
+        )
       )
 
       val promiseStart: Promise[DrainingControl[Done]] = Promise[DrainingControl[Done]]()
@@ -112,12 +120,13 @@ class S3StreamGraphFactoryTest extends TestKit(ActorSystem("test-system"))
 
       Thread.sleep(1000)
 
-      s3ObjectsToEvents.foreach{ case (_, s3Event) =>
-        publishToKafka[String, String](inputTopic, s3Event.bucketName, s3Event.asJson.toString())
+      s3ObjectsToEvents.foreach {
+        case (_, s3Event) =>
+          publishToKafka[String, String](inputTopic, s3Event.bucketName, s3Event.asJson.toString())
       }
 
       val expectedS3ContentsToEvents = receiveN(3, 5.second)
-        .map( msg => msg.asInstanceOf[(String, MyS3Event)] )
+        .map(msg => msg.asInstanceOf[(String, MyS3Event)])
         .toMap
 
       assert(s3ObjectsToEvents == expectedS3ContentsToEvents)
@@ -130,7 +139,6 @@ class S3StreamGraphFactoryTest extends TestKit(ActorSystem("test-system"))
       }
 
     }
-
 
   }
 

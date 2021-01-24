@@ -10,18 +10,21 @@ class KafkaCommittableFlow
 
 object KafkaCommittableFlow {
 
-  def apply[K, V, O](flow: Flow[CommittableMessage[K, V], O, NotUsed]): Flow[CommittableMessage[K, V], (CommittableOffset, O), NotUsed] =
-    Flow.fromGraph[CommittableMessage[K, V], (CommittableOffset, O), NotUsed](GraphDSL.create() { implicit b =>
-      import GraphDSL.Implicits._
+  def apply[K, V, O](
+    flow: Flow[CommittableMessage[K, V], O, NotUsed]
+  ): Flow[CommittableMessage[K, V], (CommittableOffset, O), NotUsed] =
+    Flow.fromGraph[CommittableMessage[K, V], (CommittableOffset, O), NotUsed](GraphDSL.create() {
+      implicit b =>
+        import GraphDSL.Implicits._
 
-      val committableSplitter = b.add(Broadcast[CommittableMessage[K, V]](2))
-      val zip = b.add(Zip[ConsumerMessage.CommittableOffset, O]())
+        val committableSplitter = b.add(Broadcast[CommittableMessage[K, V]](2))
+        val zip = b.add(Zip[ConsumerMessage.CommittableOffset, O]())
 
-      committableSplitter.out(0).map(_.committableOffset) ~> zip.in0
+        committableSplitter.out(0).map(_.committableOffset) ~> zip.in0
 
-      committableSplitter.out(1).via(flow) ~> zip.in1
+        committableSplitter.out(1).via(flow) ~> zip.in1
 
-      FlowShape(committableSplitter.in, zip.out)
+        FlowShape(committableSplitter.in, zip.out)
     })
 
 }

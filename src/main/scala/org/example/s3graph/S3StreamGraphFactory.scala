@@ -19,17 +19,17 @@ import scala.concurrent.{ExecutionContextExecutor, Future, Promise}
 import scala.util.Try
 
 case class S3StreamGraphFactory[S3E <: S3BaseEvent](
-                                                s3SinkProvider: S3E => Sink[ByteString, Future[Done]],
-                                                s3EventToExecutedGraphFlow: S3EventToExecutedGraphFlow[S3E],
-                                                filter: S3E => Boolean = (_: S3E) => true,
-                                                parallelism: Int = 1
-                                              )(
-                                                implicit
-                                                system: ActorSystem,
-                                                mat: ActorMaterializer,
-                                                ec: ExecutionContextExecutor,
-                                                decoder: Decoder[S3E]
-                                              ) extends Actor with LazyLogging {
+  s3SinkProvider: S3E => Sink[ByteString, Future[Done]],
+  s3EventToExecutedGraphFlow: S3EventToExecutedGraphFlow[S3E],
+  filter: S3E => Boolean = (_: S3E) => true,
+  parallelism: Int = 1
+)(implicit
+  system: ActorSystem,
+  mat: ActorMaterializer,
+  ec: ExecutionContextExecutor,
+  decoder: Decoder[S3E]
+) extends Actor
+    with LazyLogging {
 
   private val committerSettings = CommitterSettings(system)
   implicit private val log: LoggingAdapter = Logging.getLogger(system.eventStream, this)
@@ -37,12 +37,18 @@ case class S3StreamGraphFactory[S3E <: S3BaseEvent](
   private val loggerAttributes: Attributes = Attributes.logLevels(
     onElement = Attributes.LogLevels.Debug,
     onFailure = Attributes.LogLevels.Error,
-    onFinish = Attributes.LogLevels.Info)
+    onFinish = Attributes.LogLevels.Info
+  )
 
   private val runnableGraph: RunnableGraph[DrainingControl[Done]] =
-    Consumer.committableSource(S3EventsConsumerSettings(), Subscriptions.topics(KafkaConsumerConfiguration().inputTopic))
+    Consumer
+      .committableSource(
+        S3EventsConsumerSettings(),
+        Subscriptions.topics(KafkaConsumerConfiguration().inputTopic)
+      )
       .via(s3EventToExecutedGraphFlow(s3SinkProvider, filter, parallelism))
-      .log(loggerName).addAttributes(loggerAttributes)
+      .log(loggerName)
+      .addAttributes(loggerAttributes)
       .map(_._1) //TODO we could attach another Sink at this point to send the other result _._2
       .toMat(Committer.sink(committerSettings))(Keep.both)
       .mapMaterializedValue(DrainingControl.apply)
@@ -67,7 +73,6 @@ case class S3StreamGraphFactory[S3E <: S3BaseEvent](
   }
 
 }
-
 
 object S3StreamGraphFactory {
 

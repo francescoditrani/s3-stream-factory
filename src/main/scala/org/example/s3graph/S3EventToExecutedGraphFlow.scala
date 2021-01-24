@@ -1,6 +1,6 @@
 package org.example.s3graph
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.kafka.ConsumerMessage.{CommittableMessage, CommittableOffset}
 import akka.stream.ActorMaterializer
@@ -28,14 +28,14 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
  */
 case class S3EventToExecutedGraphFlow[S3E <: S3BaseEvent]() extends LazyLogging {
 
-  def apply(s3BytestringSinkProvider: S3E => Sink[ByteString, Future[Unit]],
+  def apply(s3BytestringSinkProvider: S3E => Sink[ByteString, Future[Done]],
                                 filter: S3E => Boolean,
                                 parallelism: Int)(
                                  implicit actorSystem: ActorSystem, mat: ActorMaterializer, ec: ExecutionContextExecutor, decoder: Decoder[S3E]
-                               ): Flow[CommittableMessage[String, String], (CommittableOffset, Option[Unit]), NotUsed] = {
+                               ): Flow[CommittableMessage[String, String], (CommittableOffset, Option[Done]), NotUsed] = {
 
 
-    def fetchS3ObjectAndFlowIntoSink(s3Event: S3E): Future[Option[Unit]] = {
+    def fetchS3ObjectAndFlowIntoSink(s3Event: S3E): Future[Option[Done]] = {
       val (bucket, key) = (s3Event.bucketName, s3Event.s3Key)
 
       if (filter(s3Event)) {

@@ -18,8 +18,8 @@ import org.example.s3graph.kafka.{KafkaConsumerConfiguration, S3EventsConsumerSe
 import scala.concurrent.{ExecutionContextExecutor, Future, Promise}
 import scala.util.Try
 
-class S3StreamGraphFactory[S3E <: S3BaseEvent](
-                                                s3SinkProvider: S3E => Sink[ByteString, Future[Unit]],
+case class S3StreamGraphFactory[S3E <: S3BaseEvent](
+                                                s3SinkProvider: S3E => Sink[ByteString, Future[Done]],
                                                 s3EventToExecutedGraphFlow: S3EventToExecutedGraphFlow[S3E],
                                                 filter: S3E => Boolean = (_: S3E) => true,
                                                 parallelism: Int = 1

@@ -38,8 +38,8 @@ object DriveDataS3EventFactory {
          |  "eventVersion" : "2.1",
          |  "bucket" : {
          |    "name" : "$bucket",
-         |    "arn" : "arn:aws:s3:::das-perception-develop",
-         |    "ownerPrincipalId" : "AVIEMWCV32UTE"
+         |    "arn" : "arn:aws:s3:::mybucket",
+         |    "ownerPrincipalId" : "XXXXXXXXXXX"
          |  },
          |  "object" : {
          |    "key" : "$key",

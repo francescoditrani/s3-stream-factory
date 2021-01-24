@@ -1,4 +1,4 @@
-package org.example.s3graph.model.perception.drivedata.model
+package org.example.s3graph.support
 
 import io.circe._
 import io.circe.generic.semiauto._

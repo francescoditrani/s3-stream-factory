@@ -16,8 +16,7 @@ import io.circe.parser.parse
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfigImpl}
 import org.apache.kafka.common.serialization.{Serdes, Serializer}
 import org.example.s3graph.S3StreamGraphFactory.StartGraph
-import org.example.s3graph.model.perception.drivedata.model.DriveDataS3EventValue
-import org.example.s3graph.support.{DriveDataS3EventFactory, S3Client}
+import org.example.s3graph.support.{DriveDataS3EventFactory, DriveDataS3EventValue, S3Client}
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}

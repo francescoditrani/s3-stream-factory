@@ -13,7 +13,7 @@ import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfigImpl}
 import org.apache.kafka.common.serialization.{Serdes, Serializer}
-import org.example.s3graph.S3EventToTransformerFlow.S3OptionalSource
+import org.example.s3graph.S3EventToExecutedGraphFlow.S3OptionalSource
 import org.example.s3graph.S3StreamGraphFactory.StartGraph
 import org.example.s3graph.model.perception.s3folder.S3FolderStreamGraphFactory
 import org.example.s3graph.model.perception.s3folder.model.S3FolderEventValue

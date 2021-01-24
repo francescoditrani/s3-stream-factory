@@ -12,8 +12,8 @@ import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder
 import org.example.s3graph.S3StreamGraphFactory.{ShutdownAll, StartGraph}
-import org.example.s3graph.model.S3BaseEvent
 import org.example.s3graph.kafka.{KafkaConsumerConfiguration, S3EventsConsumerSettings}
+import org.example.s3graph.model.S3BaseEvent
 
 import scala.concurrent.{ExecutionContextExecutor, Future, Promise}
 import scala.util.Try

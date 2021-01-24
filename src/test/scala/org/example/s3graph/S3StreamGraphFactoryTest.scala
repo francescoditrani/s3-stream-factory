@@ -4,9 +4,9 @@ import akka.Done
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.kafka.scaladsl.Consumer.DrainingControl
 import akka.stream.alpakka.s3.scaladsl.S3
-import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.stream.scaladsl.{Flow, Sink}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
-import akka.testkit.{ImplicitSender, TestActors, TestKit}
+import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.syntax._
@@ -16,7 +16,7 @@ import org.example.s3graph.S3StreamGraphFactory.{ShutdownAll, StartGraph}
 import org.example.s3graph.support.{MyS3Event, S3Client}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike, _}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike}
 import org.scalatestplus.mockito.MockitoSugar
 
 import java.io.ByteArrayInputStream

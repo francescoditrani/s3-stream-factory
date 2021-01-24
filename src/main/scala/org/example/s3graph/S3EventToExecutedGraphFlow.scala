@@ -1,12 +1,12 @@
 package org.example.s3graph
 
-import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.kafka.ConsumerMessage.{CommittableMessage, CommittableOffset}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.util.ByteString
+import akka.{Done, NotUsed}
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder
 import org.example.s3graph.error.ParsingException

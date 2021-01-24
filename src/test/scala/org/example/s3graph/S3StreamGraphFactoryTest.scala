@@ -1,6 +1,6 @@
 package org.example.s3graph
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.kafka.scaladsl.Consumer.DrainingControl
 import akka.stream.alpakka.s3.scaladsl.S3
@@ -95,12 +95,11 @@ class S3StreamGraphFactoryTest
           )
       }
 
-      val s3BytestringSinkProvider: MyS3Event => Sink[ByteString, Future[Done]] =
+      val s3BytestringSinkProvider: MyS3Event => Sink[ByteString, NotUsed] =
         (s3Event: MyS3Event) => {
           Flow[ByteString]
             .map(_.decodeString("UTF-8"))
             .to(Sink.foreach { content => testActor ! (content -> s3Event) })
-            .mapMaterializedValue(_ => Future(Done))
         }
 
       val s3StreamGraph: ActorRef = system.actorOf(

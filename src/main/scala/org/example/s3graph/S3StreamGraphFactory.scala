@@ -1,6 +1,5 @@
 package org.example.s3graph
 
-import akka.Done
 import akka.actor.{Actor, ActorSystem}
 import akka.event.{Logging, LoggingAdapter}
 import akka.kafka.scaladsl.Consumer.DrainingControl
@@ -9,20 +8,21 @@ import akka.kafka.{CommitterSettings, Subscriptions}
 import akka.stream.scaladsl.{Keep, RunnableGraph, Sink}
 import akka.stream.{ActorMaterializer, Attributes}
 import akka.util.ByteString
+import akka.{Done, NotUsed}
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder
 import org.example.s3graph.S3StreamGraphFactory.{ShutdownAll, StartGraph}
 import org.example.s3graph.kafka.{KafkaConsumerConfiguration, S3EventsConsumerSettings}
 import org.example.s3graph.model.S3BaseEvent
 
-import scala.concurrent.{ExecutionContextExecutor, Future, Promise}
+import scala.concurrent.{ExecutionContextExecutor, Promise}
 import scala.util.Try
 
 case class S3StreamGraphFactory[S3E <: S3BaseEvent](
-  s3SinkProvider: S3E => Sink[ByteString, Future[Done]],
-  s3EventToExecutedGraphFlow: S3EventToExecutedGraphFlow[S3E],
-  filter: S3E => Boolean = (_: S3E) => true,
-  parallelism: Int = 1
+                                                     s3SinkProvider: S3E => Sink[ByteString, NotUsed],
+                                                     s3EventToExecutedGraphFlow: S3EventToExecutedGraphFlow[S3E],
+                                                     filter: S3E => Boolean = (_: S3E) => true,
+                                                     parallelism: Int = 1
 )(implicit
   system: ActorSystem,
   mat: ActorMaterializer,

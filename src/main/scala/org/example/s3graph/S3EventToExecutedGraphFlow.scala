@@ -1,12 +1,12 @@
 package org.example.s3graph
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.kafka.ConsumerMessage.{CommittableMessage, CommittableOffset}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.util.ByteString
-import akka.{Done, NotUsed}
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder
 import org.example.s3graph.error.ParsingException
@@ -29,7 +29,7 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 case class S3EventToExecutedGraphFlow[S3E <: S3BaseEvent]() extends LazyLogging {
 
   def apply(
-    s3BytestringSinkProvider: S3E => Sink[ByteString, Future[Done]],
+    s3BytestringSinkProvider: S3E => Sink[ByteString, NotUsed],
     filter: S3E => Boolean,
     parallelism: Int
   )(implicit
@@ -37,9 +37,9 @@ case class S3EventToExecutedGraphFlow[S3E <: S3BaseEvent]() extends LazyLogging 
     mat: ActorMaterializer,
     ec: ExecutionContextExecutor,
     decoder: Decoder[S3E]
-  ): Flow[CommittableMessage[String, String], (CommittableOffset, Option[Done]), NotUsed] = {
+  ): Flow[CommittableMessage[String, String], (CommittableOffset, Option[Unit]), NotUsed] = {
 
-    def fetchS3ObjectAndFlowIntoSink(s3Event: S3E): Future[Option[Done]] = {
+    def fetchS3ObjectAndFlowIntoSink(s3Event: S3E): Future[Unit] = {
       val (bucket, key) = (s3Event.bucketName, s3Event.s3Key)
 
       if (filter(s3Event)) {
@@ -53,11 +53,10 @@ case class S3EventToExecutedGraphFlow[S3E <: S3BaseEvent]() extends LazyLogging 
               logger.error(errorMsg, ex)
               None
           }))
-          .flatMap(_.map {
-            case (source, _) =>
-              source.runWith(s3BytestringSinkProvider(s3Event)).map(Some(_))
-          }.getOrElse(Future(None)))
-      } else Future(None)
+          .map(_.map {
+            case (source, _) => source.runWith(s3BytestringSinkProvider(s3Event))
+          }.getOrElse(Future(())))
+      } else Future(())
 
     }
 
@@ -65,7 +64,7 @@ case class S3EventToExecutedGraphFlow[S3E <: S3BaseEvent]() extends LazyLogging 
       Flow[CommittableMessage[String, String]]
         .map(message => ParseInto[S3E](message.record.value()))
         .mapAsync(parallelism) {
-          case Right(event) => fetchS3ObjectAndFlowIntoSink(event)
+          case Right(event) => fetchS3ObjectAndFlowIntoSink(event).map(Some(_))
           case Left(parsingError: ParsingException) =>
             //TODO extend by providing function to handle parsing errors?
             logger.error("Error handling entities. Ignoring event.", parsingError)

@@ -1,4 +1,4 @@
-NOTE: This migration of this project to open source is a WIP.
+NOTE: The migration of this project to open source is a WIP.
 
 The release process to a public repository is not implemented.
 

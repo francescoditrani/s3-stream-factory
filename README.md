@@ -25,7 +25,7 @@ The graph is parametrised for "s3 event type".
         (s3Event: MyS3Event) => {
           Flow[ByteString]
             .map(_.decodeString("UTF-8"))
-            .to(Sink.foreach { content => println(content) })
+            .to(Sink.foreach { content => println(s"s3Event: $s3Event. content: $content") })
         }
 
   //instantiate the Graph Factory passing the Sink Provider

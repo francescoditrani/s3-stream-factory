@@ -102,14 +102,8 @@ class S3StreamGraphFactoryTest
             .to(Sink.foreach { content => testActor ! (content -> s3Event) })
         }
 
-      val s3StreamGraph: ActorRef = system.actorOf(
-        Props(
-          S3StreamGraphFactory[MyS3Event](
-            s3BytestringSinkProvider,
-            S3EventToExecutedGraphFlow[MyS3Event]()
-          )
-        )
-      )
+      val s3StreamGraph: ActorRef =
+        system.actorOf(Props(S3StreamGraphFactory[MyS3Event](s3BytestringSinkProvider)))
 
       val promiseStart: Promise[DrainingControl[Done]] = Promise[DrainingControl[Done]]()
       val futureStartGraph = promiseStart.future

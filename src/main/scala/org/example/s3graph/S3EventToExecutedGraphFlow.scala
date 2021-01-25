@@ -26,9 +26,9 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
   * - runs each Source with the Sink generated applying the `s3BytestringSinkProvider` function;
   * - outputs CommittableOffsets in case of successfully ran graph.
   */
-case class S3EventToExecutedGraphFlow[S3E <: S3BaseEvent]() extends LazyLogging {
+case class S3EventToExecutedGraphFlow() extends LazyLogging {
 
-  def apply(
+  def apply[S3E <: S3BaseEvent](
     s3BytestringSinkProvider: S3E => Sink[ByteString, NotUsed],
     filter: S3E => Boolean,
     parallelism: Int

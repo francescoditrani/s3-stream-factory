@@ -19,10 +19,9 @@ import scala.concurrent.{ExecutionContextExecutor, Promise}
 import scala.util.Try
 
 case class S3StreamGraphFactory[S3E <: S3BaseEvent](
-                                                     s3SinkProvider: S3E => Sink[ByteString, NotUsed],
-                                                     s3EventToExecutedGraphFlow: S3EventToExecutedGraphFlow[S3E],
-                                                     filter: S3E => Boolean = (_: S3E) => true,
-                                                     parallelism: Int = 1
+  s3SinkProvider: S3E => Sink[ByteString, NotUsed],
+  filter: S3E => Boolean = (_: S3E) => true,
+  parallelism: Int = 1
 )(implicit
   system: ActorSystem,
   mat: ActorMaterializer,
@@ -46,7 +45,7 @@ case class S3StreamGraphFactory[S3E <: S3BaseEvent](
         S3EventsConsumerSettings(),
         Subscriptions.topics(KafkaConsumerConfiguration().inputTopic)
       )
-      .via(s3EventToExecutedGraphFlow(s3SinkProvider, filter, parallelism))
+      .via(S3EventToExecutedGraphFlow()(s3SinkProvider, filter, parallelism))
       .log(loggerName)
       .addAttributes(loggerAttributes)
       .map(_._1) //TODO we could attach another Sink at this point to send the other result _._2

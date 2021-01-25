@@ -1,21 +1,58 @@
+NOTE: This migration of this project to open source is a WIP.
+
+The release process to a public repository is not implemented.
+
 # S3 Stream Factory
 
+This library provides a factory to generate an Akka Streams graph that will listen to a configured Kafka topic for events referencing new S3 objects.
+Once a new S3 event is published to Kafka, the graph will fetch and stream the referenced object to the provided Sink and will handle Kafka committing.
 
-This library provides a factory to generate an akka streams graph that will listen to a configured Kafka topic for event referencing new s3 objects.
-Once a new event is published to Kafka, it will stream the reference object(s) to the provided Sink and handle the commit of the source in case of success.
- 
-The graph is parametrised for "s3 event type" and "Sink Input type". The library already provides two implementations:
- - one with DriveData event type that streams single objects as bytestring; 
- - one with more generic S3 events that streams objects under a prefix as stream of s3 sources.
- 
-It's possible of course to add new implementations. In case makes sense to reuse your one, please consider adding it to this lib.
+It's possible to provide a predicate to filter S3 events.
+It's possible to configure the processing parallelism.
 
+Currently, S3 event parsing errors and S3 download errors are only logged.
+
+The graph is parametrised for "s3 event type". 
  
 ![](doc/s3%20stream%20factory.png)
 
-Here an example of usage of this lib => [example](https://gitlab.mobilityservices.io/am/roam/perception/drive-data-pipeline/dms-das-perception-mapmatcher-feeder/blob/develop/src/main/scala/dms/das/Application.scala)
+## Usage
+
+```scala
+
+ // define the Sink Provider
+  val mySinkProvider: MyS3Event => Sink[ByteString, NotUsed] =
+        (s3Event: MyS3Event) => {
+          Flow[ByteString]
+            .map(_.decodeString("UTF-8"))
+            .to(Sink.foreach { content => println(content) })
+        }
+
+  //instantiate the Graph Factory passing the Sink Provider
+  val s3StreamGraph: ActorRef = system.actorOf(
+    Props(S3StreamGraphFactory(
+      s3SinkProvider = mySinkProvider,
+      filter = _.s3Key.endsWith(".json"),
+      parallelism = 3
+    ))
+  )
+
+  //start the graph. The promise is completed with the DrainingControl, useful in the shutdown phase.
+  val promiseStart = Promise[DrainingControl[Done]]()
+  s3StreamGraph ! StartGraph(promiseStart)
+
+  //shutdown the graph
+  s3StreamGraph ! ShutdownAll
  
-##  Usage (for build.sbt)
+  //wait for the graph shutdown
+  Await.result(promiseStart.future.map(_.isShutdown), 5.seconds)
+
+
+```
+
+
+
+##  Dependencies
 
 This library is actually compiled against scala 2.12
 
@@ -27,38 +64,6 @@ Akka Streams Kafka = "1.0.4"
 Circe = "0.11.1"
 Alpakka S3" = "1.0.1"
 ```
-
-To use this library, add to your dependecies:
-```scala
-"org.example" %% "s3-stream-factory" % "x.x.x"
-``` 
-Add these repositories:
-```
-resolvers += "dasNexusSnapshots" at "https://nexus.mobilityservices.io/repository/mvn-das-snaphsots/"
-resolvers += "dasNexusReleases" at "https://nexus.mobilityservices.io/repository/mvn-das-releases/"
-```
-
-And the credentials with something like:
-
-```scala
-credentials += {
-  (sys.env.get("USERNAME"), sys.env.get("PASSWORD")) match {
-    case (Some(user: String), Some(pwd: String)) =>
-      Credentials("Sonatype Nexus Repository Manager", "nexus.***.io", user, pwd)
-    case _ => Credentials(Path.userHome / ".sbt" / ".nexuscredentials")
-  }
-}
-```    
-
-adding the `.nexuscredentials` file under `~/.sbt/` with something like:
-```
-realm=Sonatype Nexus Repository Manager
-host=nexus.mobilityservices.io
-user=<ldap_username>
-password=<ldap_password>
-```
-
-The env variables `USERNAME` and `PASSWORD` are LDAP credentials available in gitlab and usable for our Nexus repo.
 
 #### Environment
 
@@ -82,34 +87,5 @@ kafka.s3-stream-factory.consumer {
 }
 ```
 
-This library uses/reads the "Alpakka S3" configuration and the "Akka Streams Kafka" configuration in case they are provided in conf files.
-
-
-### Contribute
-
-To create a new version of this library:
- - branch develop
- - add code (to run tests locally, execute: `make localTest` )
- - increase the version under `version.sbt` (keeping it `-SNAPSHOT`)
- - merge on `develop` => this will trigger a SNAPSHOT "release"
- 
-When you are done and you want to release a master version
-- merge on `master`
-- pull `master` locally
-- run: `make release` 
-
-#### Release details
-
-`make release` will run a minio container and use the `sbt-native-packager` + `sbt-relase` plugins to:
-- check there are no snapshot dependencies
-- inquire the release version
-- clean target folder
-- run tests
-- set the release version
-- commit the release version
-- create a release tag
-- publish to the release repository
-- set the next snapshot version (increasing the patch number)
-- commit the new version
-- push all the changes/tags
+This library uses/reads the "Alpakka S3" and the "Akka Streams Kafka" configurations, in case they are provided in conf files.
 
